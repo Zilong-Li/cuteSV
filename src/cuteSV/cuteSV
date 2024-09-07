@@ -879,7 +879,6 @@ def cleanup():
 SVTYPES = ["DEL", "INS", "DUP", "INV", "TRA"]
 samfile = None
 
-
 def single_pipe(
     sam_path,
     min_length,
@@ -893,6 +892,7 @@ def single_pipe(
     merge_ins_threshold,
     MaxSize,
     bed_regions,
+    read_hap1_prob,
 ):
     candidate = {}
     candidate["DEL"] = list()
@@ -938,9 +938,22 @@ def single_pipe(
                 is_primary = 0
                 if read.flag in [0, 16]:
                     is_primary = 1
-                reads_info_list.append(
-                    (pos_start, pos_end, is_primary, read.query_name, Chr_name)
-                )
+                if read_hap1_prob.get(read.query_name):
+                    reads_info_list.append(
+                        (
+                            pos_start,
+                            pos_end,
+                            is_primary,
+                            read.query_name,
+                            Chr_name,
+                            read_hap1_prob[read.query_name],
+                        )
+                    )
+                else:
+                    reads_info_list.append(
+                        (pos_start, pos_end, is_primary, read.query_name, Chr_name, 0.5)
+                    )
+
     pid = current_process().pid
     for sv_type in SVTYPES:
         with open("%ssignatures/%s%s.pickle" % (temp_dir, pid, sv_type), "ab") as f:
@@ -1343,6 +1356,7 @@ def main_ctrl(args, argv):
             if pos < local_ref_len:
                 Task_list.append([i[0], pos, local_ref_len])
     bed_regions = load_bed(args.include_bed, Task_list)
+    read_hap1_prob = load_read_hap1_prob(args.read_phase_file)
 
     #'''
     candidates = {}
@@ -1377,6 +1391,7 @@ def main_ctrl(args, argv):
                 args.merge_ins_threshold,
                 args.max_size,
                 None if bed_regions is None else bed_regions[i],
+                read_hap1_prob,
             )
         ]
         analysis_pools.map_async(multi_run_wrapper, paras)

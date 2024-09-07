@@ -107,6 +107,7 @@ def count_coverage(chr, s, e, f, read_count, up_bound, itround):
 
     return status
 
+
 ## reads_list = (pos_start, pos_end, is_primary, read.query_name, Chr_name)
 def overlap_cover(svs_list, reads_list):
     # [(10024, 12024), (89258, 91258), ...]
@@ -174,13 +175,14 @@ def overlap_cover(svs_list, reads_list):
     # return iteration_dict, primary_num_dict, cover2_dict
     return iteration_dict, primary_num_dict, cover2_dict, overlap2_dict
 
+
 def assign_gt(iteration_dict, primary_num_dict, cover_dict, read_id_dict):
     assign_list = list()
     for idx in read_id_dict:
         iteration = iteration_dict[idx]
         primary_num = primary_num_dict[idx]
-        # TODO: read phase probability here 
-        read_count = cover_dict[idx] # list of read names
+        # TODO: read phase probability here
+        read_count = cover_dict[idx]  # list of read names
         DR = 0
         for query in read_count:
             if query not in read_id_dict[idx]:
@@ -763,7 +765,7 @@ def load_valuable_chr(path):
 def load_bed(bed_file, Task_list):
     # Task_list: [[chr, start, end], ...]
     bed_regions = dict()
-    if bed_file != None:
+    if bed_file is not None:
         # only consider regions in BED file
         with open(bed_file, "r") as f:
             for line in f:
@@ -783,5 +785,17 @@ def load_bed(bed_file, Task_list):
                             region_list[i].append(item)
         assert len(region_list) == len(Task_list), "parse bed file error"
         return region_list
+    else:
+        return None
+
+
+def load_read_hap1_prob(read_phase_file):
+    read_hap1_prob = dict()
+    if read_phase_file is not None:
+        with open(read_phase_file, "r") as f:
+            for line in f:
+                seq = line.strip().split("\t")
+                read_hap1_prob[seq[0]] = seq[1]
+        return read_hap1_prob
     else:
         return None

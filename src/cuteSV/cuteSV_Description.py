@@ -98,6 +98,12 @@ def parseArgs(argv):
         default=10000000,
         type=int,
     )
+    parser.add_argument(
+        "-read_hap1_prob", 
+        help="Optional text file with haplotype 1 probability of each read",
+        default=None,
+        type=str,
+    )
     # The description of batches needs to improve.
     parser.add_argument(
         "-S", "--sample", help="Sample name/id", default="NULL", type=str
