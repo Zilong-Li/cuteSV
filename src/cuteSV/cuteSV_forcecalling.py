@@ -879,7 +879,13 @@ def solve_fc(
             svtype_id_dict[i] = sv_type
             ci_dict[i] = (CIPOS, CILEN)
         if chrom in reads_info:
-            iteration_dict, primary_num_dict, cover_dict, overlap_dict = overlap_cover(
+            (
+                iteration_dict,
+                primary_num_dict,
+                cover_dict,
+                overlap_dict,
+                hap1_prob_dict,
+            ) = overlap_cover(
                 search_list, reads_info[chrom]
             )  # both key(sv idx), value(set(read id))
         else:
@@ -902,6 +908,7 @@ def solve_fc(
             overlap_dict,
             read_id_dict,
             svtype_id_dict,
+            hap1_prob_dict,
         )
         for i in range(len(svs_dict[chrom])):
             assert len(assign_list[i]) == 6, "assign genotype error"

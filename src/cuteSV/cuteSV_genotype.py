@@ -31,6 +31,60 @@ def rescale_read_counts(c0, c1, max_allowed_reads=100):
     return c0, c1
 
 
+def read_like(r, gt, hap1_prob, error=0.05):
+    e1 = 0.0
+    e2 = 0.0
+    if r == gt[0]:
+        e1 = 1 - error
+        e2 = error
+    elif r == gt[1]:
+        e1 = error
+        e2 = 1 - error
+    else:
+        raise Exception("Invalid read vs gt class")
+    like = e1 * hap1_prob + e2 * (1 - hap1_prob)
+    return like
+
+
+def cal_PGL(rnames, vnames, hap1_prob):
+    c0 = len(rnames)
+    c1 = len(vnames)
+    gts = [[0, 0], [0, 1], [1, 0], [1, 1]]
+    gls = [1.0, 1.0, 1.0, 1.0]
+    for r in rnames:
+        gls[0] *= read_like(0, gts[0], hap1_prob[r])
+        gls[1] *= read_like(0, gts[1], hap1_prob[r])
+        gls[2] *= read_like(0, gts[2], hap1_prob[r])
+        gls[3] *= read_like(0, gts[3], hap1_prob[r])
+    for r in vnames:
+        gls[0] *= read_like(1, gts[0], hap1_prob[r])
+        gls[1] *= read_like(1, gts[1], hap1_prob[r])
+        gls[3] *= read_like(1, gts[3], hap1_prob[r])
+
+    ori_GL00 = gls[0]
+    ori_GL01 = 0.5 * gls[1] + 0.5 * gls[2]
+    ori_GL11 = gls[4]
+    # normalized genotype likelihood
+    prob = list(
+        normalize_log10_probs([log10(ori_GL00), log10(ori_GL01), log10(ori_GL11)])
+    )
+    GL_P = [pow(10, i) for i in prob]
+    PL = [int(np.around(-10 * log10(i))) for i in GL_P]
+    GQ = [
+        int(-10 * log10(GL_P[1] + GL_P[2])),
+        int(-10 * log10(GL_P[0] + GL_P[2])),
+        int(-10 * log10(GL_P[0] + GL_P[1])),
+    ]
+    QUAL = abs(np.around(-10 * log10(GL_P[0]), 1))
+
+    return (
+        Genotype[prob.index(max(prob))],
+        "%d,%d,%d" % (PL[0], PL[1], PL[2]),
+        max(GQ),
+        QUAL,
+    )
+
+
 def cal_GL(c0, c1):
     if c0 == 3 and c1 == 1:
         return "0/1", "3,3,24", 3, 3.0
@@ -108,7 +162,7 @@ def count_coverage(chr, s, e, f, read_count, up_bound, itround):
     return status
 
 
-## reads_list = (pos_start, pos_end, is_primary, read.query_name, Chr_name)
+## reads_list = (pos_start, pos_end, is_primary, read.query_name, Chr_name, hap1_prob)
 def overlap_cover(svs_list, reads_list):
     # [(10024, 12024), (89258, 91258), ...]
     # [[10000, 10468, 0, 'm54238_180901_011437/52298335/ccs'], [10000, 17490, 1, 'm54238_180901_011437/44762027/ccs'], ...]
@@ -157,6 +211,7 @@ def overlap_cover(svs_list, reads_list):
     cover2_dict = dict()
     iteration_dict = dict()
     primary_num_dict = dict()
+    hap1_prob_dict = dict()
     for idx in cover_dict:
         iteration_dict[idx] = len(overlap_dict[idx])
         primary_num_dict[idx] = 0
@@ -164,30 +219,37 @@ def overlap_cover(svs_list, reads_list):
             if reads_list[x][2] == 1:
                 primary_num_dict[idx] += 1
         cover2_dict[idx] = set()
+        hap1_prob_dict[idx] = set()
         for x in cover_dict[idx]:
             if reads_list[x][2] == 1:
                 cover2_dict[idx].add(reads_list[x][3])
+                hap1_prob_dict[idx].add(reads_list[x][5])
         overlap2_dict[idx] = set()
         for x in overlap_dict[idx]:
             if reads_list[x][2] == 1:
                 overlap2_dict[idx].add(reads_list[x][3])
     # duipai(svs_list, reads_list, iteration_dict, primary_num_dict, cover2_dict, overlap2_dict)
     # return iteration_dict, primary_num_dict, cover2_dict
-    return iteration_dict, primary_num_dict, cover2_dict, overlap2_dict
+    return iteration_dict, primary_num_dict, cover2_dict, overlap2_dict, hap1_prob_dict
 
 
-def assign_gt(iteration_dict, primary_num_dict, cover_dict, read_id_dict):
+def assign_gt(
+    iteration_dict, primary_num_dict, cover_dict, read_id_dict, hap1_prob_dict
+):
     assign_list = list()
     for idx in read_id_dict:
-        iteration = iteration_dict[idx]
-        primary_num = primary_num_dict[idx]
         # TODO: read phase probability here
         read_count = cover_dict[idx]  # list of read names
+        rnames = list()
+        vnames = list()
         DR = 0
         for query in read_count:
             if query not in read_id_dict[idx]:
                 DR += 1
-        GT, GL, GQ, QUAL = cal_GL(DR, len(read_id_dict[idx]))
+                rnames.append(query)
+            else:
+                vnames.append(query)
+        GT, GL, GQ, QUAL = cal_PGL(rnames, vnames, hap1_prob_dict)
         assign_list.append([len(read_id_dict[idx]), DR, GT, GL, GQ, QUAL])
     return assign_list
 
@@ -199,20 +261,24 @@ def assign_gt_fc(
     overlap_dict,
     read_id_dict,
     svtype_id_dict,
+    hap1_prob_dict,
 ):
     assign_list = list()
     for idx in read_id_dict:
-        iteration = iteration_dict[idx]
-        primary_num = primary_num_dict[idx]
         if svtype_id_dict[idx] == "DEL":
             read_count = overlap_dict[idx]
         else:
             read_count = cover_dict[idx]
+        rnames = list()
+        vnames = list()
         DR = 0
         for query in read_count:
             if query not in read_id_dict[idx]:
                 DR += 1
-        GT, GL, GQ, QUAL = cal_GL(DR, len(read_id_dict[idx]))
+                rnames.append(query)
+            else:
+                vnames.append(query)
+        GT, GL, GQ, QUAL = cal_PGL(rnames, vnames, hap1_prob_dict)
         assign_list.append([len(read_id_dict[idx]), DR, GT, GL, GQ, QUAL])
     return assign_list
 
@@ -795,7 +861,7 @@ def load_read_hap1_prob(read_phase_file):
         with open(read_phase_file, "r") as f:
             for line in f:
                 seq = line.strip().split("\t")
-                read_hap1_prob[seq[0]] = seq[1]
+                read_hap1_prob[seq[0]] = float(seq[1])
         return read_hap1_prob
     else:
         return None

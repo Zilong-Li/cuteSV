@@ -879,6 +879,7 @@ def cleanup():
 SVTYPES = ["DEL", "INS", "DUP", "INV", "TRA"]
 samfile = None
 
+
 def single_pipe(
     sam_path,
     min_length,
@@ -938,7 +939,7 @@ def single_pipe(
                 is_primary = 0
                 if read.flag in [0, 16]:
                     is_primary = 1
-                if read_hap1_prob.get(read.query_name):
+                if read_hap1_prob is not None and read_hap1_prob.get(read.query_name):
                     reads_info_list.append(
                         (
                             pos_start,

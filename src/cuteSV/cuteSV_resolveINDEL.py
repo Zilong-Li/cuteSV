@@ -532,15 +532,17 @@ def call_gt(
         svs_list.append(
             (max(item[7] - max_cluster_bias, 0), item[7] + max_cluster_bias)
         )
-    iteration_dict, primary_num_dict, cover_dict, overlap_dict = overlap_cover(
-        svs_list, reads_list
+    iteration_dict, primary_num_dict, cover_dict, overlap_dict, hap1_prob_dict = (
+        overlap_cover(svs_list, reads_list)
     )  # both key(sv idx), value(set(read id))
     assert len(cover_dict) == len(candidate_single_SV), "overlap length error"
 
     read_id_dict = dict()
     for i in range(len(candidate_single_SV)):
         read_id_dict[i] = candidate_single_SV[i][8]
-    assign_list = assign_gt(iteration_dict, primary_num_dict, cover_dict, read_id_dict)
+    assign_list = assign_gt(
+        iteration_dict, primary_num_dict, cover_dict, read_id_dict, hap1_prob_dict
+    )
     # [[DV, DR, GT, GL, GQ, QUAL] ...]
     assert len(candidate_single_SV) == len(assign_list), "assign error"
     candidate_single_SV_gt = list()
