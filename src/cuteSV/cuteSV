@@ -24,6 +24,7 @@ from cuteSV.cuteSV_genotype import (
     generate_pvcf,
     load_valuable_chr,
     load_bed,
+    load_read_hap1_prob,
     Generation_VCF_header,
 )
 from cuteSV.cuteSV_forcecalling import force_calling_chrom
@@ -1357,7 +1358,7 @@ def main_ctrl(args, argv):
             if pos < local_ref_len:
                 Task_list.append([i[0], pos, local_ref_len])
     bed_regions = load_bed(args.include_bed, Task_list)
-    read_hap1_prob = load_read_hap1_prob(args.read_phase_file)
+    read_hap1_prob = load_read_hap1_prob(args.read_hap1_prob)
 
     #'''
     candidates = {}

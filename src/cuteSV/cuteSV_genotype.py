@@ -59,11 +59,12 @@ def cal_PGL(rnames, vnames, hap1_prob):
     for r in vnames:
         gls[0] *= read_like(1, gts[0], hap1_prob[r])
         gls[1] *= read_like(1, gts[1], hap1_prob[r])
+        gls[2] *= read_like(1, gts[2], hap1_prob[r])
         gls[3] *= read_like(1, gts[3], hap1_prob[r])
 
     ori_GL00 = gls[0]
     ori_GL01 = 0.5 * gls[1] + 0.5 * gls[2]
-    ori_GL11 = gls[4]
+    ori_GL11 = gls[3]
     # normalized genotype likelihood
     prob = list(
         normalize_log10_probs([log10(ori_GL00), log10(ori_GL01), log10(ori_GL11)])
