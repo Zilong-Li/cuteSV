@@ -540,9 +540,7 @@ def call_gt(
     read_id_dict = dict()
     for i in range(len(candidate_single_SV)):
         read_id_dict[i] = candidate_single_SV[i][8]
-    assign_list = assign_gt(
-        iteration_dict, primary_num_dict, cover_dict, read_id_dict, hap1_prob_dict
-    )
+    assign_list = assign_gt(iteration_dict, primary_num_dict, cover_dict, read_id_dict)
     # [[DV, DR, GT, GL, GQ, QUAL] ...]
     assert len(candidate_single_SV) == len(assign_list), "assign error"
     candidate_single_SV_gt = list()

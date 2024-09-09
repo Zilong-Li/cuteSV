@@ -212,7 +212,6 @@ def overlap_cover(svs_list, reads_list):
     cover2_dict = dict()
     iteration_dict = dict()
     primary_num_dict = dict()
-    hap1_prob_dict = dict()
     for idx in cover_dict:
         iteration_dict[idx] = len(overlap_dict[idx])
         primary_num_dict[idx] = 0
@@ -220,37 +219,29 @@ def overlap_cover(svs_list, reads_list):
             if reads_list[x][2] == 1:
                 primary_num_dict[idx] += 1
         cover2_dict[idx] = set()
-        hap1_prob_dict[idx] = set()
         for x in cover_dict[idx]:
             if reads_list[x][2] == 1:
                 cover2_dict[idx].add(reads_list[x][3])
-                hap1_prob_dict[idx].add(reads_list[x][5])
         overlap2_dict[idx] = set()
         for x in overlap_dict[idx]:
             if reads_list[x][2] == 1:
                 overlap2_dict[idx].add(reads_list[x][3])
     # duipai(svs_list, reads_list, iteration_dict, primary_num_dict, cover2_dict, overlap2_dict)
     # return iteration_dict, primary_num_dict, cover2_dict
-    return iteration_dict, primary_num_dict, cover2_dict, overlap2_dict, hap1_prob_dict
+    return iteration_dict, primary_num_dict, cover2_dict, overlap2_dict
 
 
-def assign_gt(
-    iteration_dict, primary_num_dict, cover_dict, read_id_dict, hap1_prob_dict
-):
+def assign_gt(iteration_dict, primary_num_dict, cover_dict, read_id_dict):
     assign_list = list()
     for idx in read_id_dict:
-        # TODO: read phase probability here
-        read_count = cover_dict[idx]  # list of read names
-        rnames = list()
-        vnames = list()
+        iteration = iteration_dict[idx]
+        primary_num = primary_num_dict[idx]
+        read_count = cover_dict[idx]
         DR = 0
         for query in read_count:
             if query not in read_id_dict[idx]:
                 DR += 1
-                rnames.append(query)
-            else:
-                vnames.append(query)
-        GT, GL, GQ, QUAL = cal_PGL(rnames, vnames, hap1_prob_dict)
+        GT, GL, GQ, QUAL = cal_GL(DR, len(read_id_dict[idx]))
         assign_list.append([len(read_id_dict[idx]), DR, GT, GL, GQ, QUAL])
     return assign_list
 
@@ -262,27 +253,23 @@ def assign_gt_fc(
     overlap_dict,
     read_id_dict,
     svtype_id_dict,
-    hap1_prob_dict,
+    read_hap1_prob,
 ):
     assign_list = list()
     for idx in read_id_dict:
-        if svtype_id_dict[idx] == "DEL":
+        iteration = iteration_dict[idx]
+        primary_num = primary_num_dict[idx]
+        if svtype_id_dict[idx] == 'DEL':
             read_count = overlap_dict[idx]
         else:
             read_count = cover_dict[idx]
-        rnames = list()
-        vnames = list()
         DR = 0
         for query in read_count:
             if query not in read_id_dict[idx]:
                 DR += 1
-                rnames.append(query)
-            else:
-                vnames.append(query)
-        GT, GL, GQ, QUAL = cal_PGL(rnames, vnames, hap1_prob_dict)
+        GT, GL, GQ, QUAL = cal_GL(DR, len(read_id_dict[idx]))
         assign_list.append([len(read_id_dict[idx]), DR, GT, GL, GQ, QUAL])
     return assign_list
-
 
 def duipai(
     svs_list, reads_list, iteration_dict, primary_num_dict, cover2_dict, overlap2_dict
