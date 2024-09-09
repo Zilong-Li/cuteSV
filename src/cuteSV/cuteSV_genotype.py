@@ -74,7 +74,7 @@ def cal_PGL(rnames, vnames, hap1_prob):
     probs = list(
         normalize_log10_probs([log10(ori_GL00), log10(ori_GL01), log10(ori_GL11), log10(ori_GL22)])
     )
-    prob = probs[1:3]
+    prob = probs[0:3]  ## this is python!
     GL_P = [pow(10, i) for i in prob]
     PL = [int(np.around(-10 * log10(i))) for i in GL_P]
     GQ = [
