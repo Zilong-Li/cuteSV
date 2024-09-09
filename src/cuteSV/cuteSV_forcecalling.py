@@ -887,7 +887,6 @@ def solve_fc(
                 primary_num_dict,
                 cover_dict,
                 overlap_dict,
-                hap1_prob_dict,
             ) = overlap_cover(
                 search_list, reads_info[chrom]
             )  # both key(sv idx), value(set(read id))
