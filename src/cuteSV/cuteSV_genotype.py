@@ -36,12 +36,12 @@ def read_like(r, gt, hap1_prob, error=0.05):
     e2 = 0.0
     if r == gt[0]:
         e1 = 1 - error
-        e2 = error
-    elif r == gt[1]:
+    else:
         e1 = error
+    if r == gt[1]:
         e2 = 1 - error
     else:
-        raise Exception("Invalid read vs gt class")
+        e2 = error
     like = e1 * hap1_prob + e2 * (1 - hap1_prob)
     return like
 
