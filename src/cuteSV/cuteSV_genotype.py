@@ -32,6 +32,8 @@ def rescale_read_counts(c0, c1, max_allowed_reads=100):
 
 
 def read_like(r, gt, hap1_prob, error=0.05):
+    if gt[0] == -1:
+        return 0.5
     e1 = 0.0
     e2 = 0.0
     if r == gt[0]:
@@ -49,26 +51,30 @@ def read_like(r, gt, hap1_prob, error=0.05):
 def cal_PGL(rnames, vnames, hap1_prob):
     c0 = len(rnames)
     c1 = len(vnames)
-    gts = [[0, 0], [0, 1], [1, 0], [1, 1]]
-    gls = [1.0, 1.0, 1.0, 1.0]
+    gts = [[0, 0], [0, 1], [1, 0], [1, 1], [-1, -1]]
+    gls = [1.0, 1.0, 1.0, 1.0, 1.0]
     for r in rnames:
         gls[0] *= read_like(0, gts[0], hap1_prob[r])
         gls[1] *= read_like(0, gts[1], hap1_prob[r])
         gls[2] *= read_like(0, gts[2], hap1_prob[r])
         gls[3] *= read_like(0, gts[3], hap1_prob[r])
+        gls[4] *= read_like(0, gts[4], hap1_prob[r])
     for r in vnames:
         gls[0] *= read_like(1, gts[0], hap1_prob[r])
         gls[1] *= read_like(1, gts[1], hap1_prob[r])
         gls[2] *= read_like(1, gts[2], hap1_prob[r])
         gls[3] *= read_like(1, gts[3], hap1_prob[r])
+        gls[4] *= read_like(1, gts[4], hap1_prob[r])
 
     ori_GL00 = gls[0]
     ori_GL01 = 0.5 * gls[1] + 0.5 * gls[2]
     ori_GL11 = gls[3]
+    ori_GL22 = gls[4]
     # normalized genotype likelihood
-    prob = list(
-        normalize_log10_probs([log10(ori_GL00), log10(ori_GL01), log10(ori_GL11)])
+    probs = list(
+        normalize_log10_probs([log10(ori_GL00), log10(ori_GL01), log10(ori_GL11), log10(ori_GL22)])
     )
+    prob = probs[1:3]
     GL_P = [pow(10, i) for i in prob]
     PL = [int(np.around(-10 * log10(i))) for i in GL_P]
     GQ = [
