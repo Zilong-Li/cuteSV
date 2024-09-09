@@ -264,10 +264,12 @@ def assign_gt_fc(
         else:
             read_count = cover_dict[idx]
         DR = 0
+        rnames = list()
         for query in read_count:
             if query not in read_id_dict[idx]:
                 DR += 1
-        GT, GL, GQ, QUAL = cal_GL(DR, len(read_id_dict[idx]))
+                rnames.append(query)
+        GT, GL, GQ, QUAL = cal_PGL(rnames, read_id_dict[idx], read_hap1_prob)
         assign_list.append([len(read_id_dict[idx]), DR, GT, GL, GQ, QUAL])
     return assign_list
 
