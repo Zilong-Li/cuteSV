@@ -34,16 +34,8 @@ def rescale_read_counts(c0, c1, max_allowed_reads=100):
 def read_like(r, gt, hap1_prob, error=0.05):
     if gt[0] == -1:
         return 0.5
-    e1 = 0.0
-    e2 = 0.0
-    if r == gt[0]:
-        e1 = 1 - error
-    else:
-        e1 = error
-    if r == gt[1]:
-        e2 = 1 - error
-    else:
-        e2 = error
+    e1 = 1 - error if r == gt[0] else error
+    e2 = 1 - error if r == gt[1] else error
     like = e1 * hap1_prob + e2 * (1 - hap1_prob)
     return like
 
@@ -54,17 +46,19 @@ def cal_PGL(rnames, vnames, hap1_prob):
     gts = [[0, 0], [0, 1], [1, 0], [1, 1], [-1, -1]]
     gls = [1.0, 1.0, 1.0, 1.0, 1.0]
     for r in rnames:
-        gls[0] *= read_like(0, gts[0], hap1_prob[r])
-        gls[1] *= read_like(0, gts[1], hap1_prob[r])
-        gls[2] *= read_like(0, gts[2], hap1_prob[r])
-        gls[3] *= read_like(0, gts[3], hap1_prob[r])
-        gls[4] *= read_like(0, gts[4], hap1_prob[r])
+        p = hap1_prob[r] if hap1_prob.get(r) else 0.5
+        gls[0] *= read_like(0, gts[0], p)
+        gls[1] *= read_like(0, gts[1], p)
+        gls[2] *= read_like(0, gts[2], p)
+        gls[3] *= read_like(0, gts[3], p)
+        gls[4] *= read_like(0, gts[4], p)
     for r in vnames:
-        gls[0] *= read_like(1, gts[0], hap1_prob[r])
-        gls[1] *= read_like(1, gts[1], hap1_prob[r])
-        gls[2] *= read_like(1, gts[2], hap1_prob[r])
-        gls[3] *= read_like(1, gts[3], hap1_prob[r])
-        gls[4] *= read_like(1, gts[4], hap1_prob[r])
+        p = hap1_prob[r] if hap1_prob.get(r) else 0.5
+        gls[0] *= read_like(1, gts[0], p)
+        gls[1] *= read_like(1, gts[1], p)
+        gls[2] *= read_like(1, gts[2], p)
+        gls[3] *= read_like(1, gts[3], p)
+        gls[4] *= read_like(1, gts[4], p)
 
     ori_GL00 = gls[0]
     ori_GL01 = 0.5 * gls[1] + 0.5 * gls[2]
