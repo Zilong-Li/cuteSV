@@ -8,6 +8,14 @@ err = 0.1
 prior = float(1 / 3)
 Genotype = ["0/0", "0/1", "1/1"]
 
+def likelihood_ratio(q1, q2):
+    if q1 / q2 > 0:
+        try:
+            return log10(q1 / q2)
+        except ValueError:
+            return 0
+    else:
+        return 0
 
 def log10sumexp(log10_probs):
     # Normalization of Genotype likelihoods
@@ -44,47 +52,48 @@ def cal_PGL(rnames, vnames, hap1_prob):
     c0 = len(rnames)
     c1 = len(vnames)
     gts = [[0, 0], [0, 1], [1, 0], [1, 1], [-1, -1]]
-    gls = [1.0, 1.0, 1.0, 1.0, 1.0]
+    # gls = [1.0, 1.0, 1.0, 1.0, 1.0]
+    gls = [0.0, 0.0, 0.0, 0.0, 0.0]
     for r in rnames:
         p = hap1_prob[r] if hap1_prob.get(r) else 0.5
-        gls[0] *= read_like(0, gts[0], p)
-        gls[1] *= read_like(0, gts[1], p)
-        gls[2] *= read_like(0, gts[2], p)
-        gls[3] *= read_like(0, gts[3], p)
-        gls[4] *= read_like(0, gts[4], p)
+        gls[0] += log10(read_like(0, gts[0], p))
+        gls[1] += log10(read_like(0, gts[1], p))
+        gls[2] += log10(read_like(0, gts[2], p))
+        gls[3] += log10(read_like(0, gts[3], p))
+        gls[4] += log10(read_like(0, gts[4], p))
     for r in vnames:
         p = hap1_prob[r] if hap1_prob.get(r) else 0.5
-        gls[0] *= read_like(1, gts[0], p)
-        gls[1] *= read_like(1, gts[1], p)
-        gls[2] *= read_like(1, gts[2], p)
-        gls[3] *= read_like(1, gts[3], p)
-        gls[4] *= read_like(1, gts[4], p)
+        gls[0] += log10(read_like(1, gts[0], p))
+        gls[1] += log10(read_like(1, gts[1], p))
+        gls[2] += log10(read_like(1, gts[2], p))
+        gls[3] += log10(read_like(1, gts[3], p))
+        gls[4] += log10(read_like(1, gts[4], p))
 
     ori_GL00 = gls[0]
-    ori_GL01 = 0.5 * gls[1] + 0.5 * gls[2]
+    ori_GL01 = log10sumexp(np.array([log10(0.5)+gls[1], log10(0.5)+gls[2]]))
+    # ori_GL01 = 0.5 * gls[1] + 0.5 * gls[2]
     ori_GL11 = gls[3]
     ori_GL22 = gls[4]
     # normalized genotype likelihood
     probs = list(
-        normalize_log10_probs([log10(ori_GL00), log10(ori_GL01), log10(ori_GL11), log10(ori_GL22)])
+        normalize_log10_probs([ori_GL00, ori_GL01, ori_GL11, ori_GL22])
     )
+    # probs = list(normalize_log10_probs([ori_GL00, ori_GL01, ori_GL11]))
     prob = probs[0:3]  ## this is python!
+    gi = prob.index(max(prob))
+    QUAL = max(0, min(60, int((-10) * likelihood_ratio(prob[1], prob[0])))) ## sniffles way
     GL_P = [pow(10, i) for i in prob]
-    PL = [int(np.around(-10 * log10(i))) for i in GL_P]
-    GQ = [
-        int(-10 * log10(GL_P[1] + GL_P[2])),
-        int(-10 * log10(GL_P[0] + GL_P[2])),
-        int(-10 * log10(GL_P[0] + GL_P[1])),
-    ]
-    QUAL = abs(np.around(-10 * log10(GL_P[0]), 1))
-
+    PL = [int(np.around(-10 * log10(max(9e-9, pow(10, i))))) for i in prob]
+    ## GQ is the second lowest PL - the lowest PL
+    # GQ = sorted([PL[0] - min(PL), PL[1] - min(PL), PL[2] - min(PL)])[1]
+    GQ = int(1000000 * GL_P[gi]) ##
+        
     return (
-        Genotype[prob.index(max(prob))],
+        Genotype[gi],
         "%d,%d,%d" % (PL[0], PL[1], PL[2]),
-        max(GQ),
+        GQ,
         QUAL,
     )
-
 
 def cal_GL(c0, c1):
     if c0 == 3 and c1 == 1:
@@ -106,17 +115,24 @@ def cal_GL(c0, c1):
     prob = list(
         normalize_log10_probs([log10(ori_GL00), log10(ori_GL01), log10(ori_GL11)])
     )
-    GL_P = [pow(10, i) for i in prob]
-    PL = [int(np.around(-10 * log10(i))) for i in GL_P]
-    GQ = [
-        int(-10 * log10(GL_P[1] + GL_P[2])),
-        int(-10 * log10(GL_P[0] + GL_P[2])),
-        int(-10 * log10(GL_P[0] + GL_P[1])),
-    ]
-    QUAL = abs(np.around(-10 * log10(GL_P[0]), 1))
+    gi = prob.index(max(prob))
+    try:
+        GL_P = [pow(10, i) for i in prob]
+        PL = [int(np.around(-10 * log10(i))) for i in GL_P]
+        GQ = [
+            int(-10 * log10(GL_P[1] + GL_P[2])),
+            int(-10 * log10(GL_P[0] + GL_P[2])),
+            int(-10 * log10(GL_P[0] + GL_P[1])),
+        ]
+        QUAL = abs(np.around(-10 * log10(GL_P[0]), 1))
+    except ValueError:
+        PL = [99, 99, 99]
+        PL[gi] = 0
+        GQ = [99, 99, 99] ## second lowest - the lowest PL = 99 - 0 = 99
+        QUAL = max(0, min(60, int((-10) * likelihood_ratio(prob[1], prob[0])))) ## sniffles way
 
     return (
-        Genotype[prob.index(max(prob))],
+        Genotype[gi],
         "%d,%d,%d" % (PL[0], PL[1], PL[2]),
         max(GQ),
         QUAL,
