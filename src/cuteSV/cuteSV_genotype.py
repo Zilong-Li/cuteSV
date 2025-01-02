@@ -50,11 +50,11 @@ def read_like(r, gt, hap1_prob, error=0.05):
     return like
 
 
-def cal_PGL(rnames, vnames, hap1_prob):
-    c0 = len(rnames)
-    c1 = len(vnames)
-    gts = [[0, 0], [0, 1], [1, 0], [1, 1], [-1, -1]]
+def cal_PGL(rnames, vnames, hap1_prob, use_gl4 = False):
+    # c0 = len(rnames)
+    # c1 = len(vnames)
     # gls = [1.0, 1.0, 1.0, 1.0, 1.0]
+    gts = [[0, 0], [0, 1], [1, 0], [1, 1], [-1, -1]]
     gls = [0.0, 0.0, 0.0, 0.0, 0.0]
     for r in rnames:
         p = hap1_prob[r] if hap1_prob.get(r) else 0.5
@@ -77,13 +77,17 @@ def cal_PGL(rnames, vnames, hap1_prob):
     ori_GL11 = gls[3]
     ori_GL22 = gls[4]
     # normalized genotype likelihood
-    probs = list(normalize_log10_probs([ori_GL00, ori_GL01, ori_GL11, ori_GL22]))
+    if use_gl4:
+        probs = list(normalize_log10_probs([ori_GL00, ori_GL01, ori_GL11, ori_GL22]))
+    else:
+        probs = list(normalize_log10_probs([ori_GL00, ori_GL01, ori_GL11]))
     # probs = list(normalize_log10_probs([ori_GL00, ori_GL01, ori_GL11]))
     prob = probs[0:3]  ## this is python!
     gi = prob.index(max(prob))
+    ## sniffles way
     QUAL = max(
         0, min(60, int((-10) * likelihood_ratio(prob[1], prob[0])))
-    )  ## sniffles way
+    ) 
     GL_P = [pow(10, i) for i in prob]
     PL = [int(np.around(-10 * log10(max(9e-9, pow(10, i))))) for i in prob]
     ## GQ is the second lowest PL - the lowest PL
@@ -266,6 +270,7 @@ def assign_gt_fc(
     read_id_dict,
     svtype_id_dict,
     read_hap1_prob,
+    use_gl4,
 ):
     assign_list = list()
     for idx in read_id_dict:
@@ -281,7 +286,7 @@ def assign_gt_fc(
             if query not in read_id_dict[idx]:
                 DR += 1
                 rnames.append(query)
-        GT, GL, GQ, QUAL = cal_PGL(rnames, read_id_dict[idx], read_hap1_prob)
+        GT, GL, GQ, QUAL = cal_PGL(rnames, read_id_dict[idx], read_hap1_prob, use_gl4)
         assign_list.append([len(read_id_dict[idx]), DR, GT, GL, GQ, QUAL])
     return assign_list
 

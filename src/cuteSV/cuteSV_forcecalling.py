@@ -686,6 +686,7 @@ def force_calling_chrom(
     threads,
     sigs_index,
     read_hap1_prob,
+    use_gl4,
 ):
     logging.info("Check the parameter -Ivcf: OK.")
     logging.info("Enable to perform force calling.")
@@ -749,6 +750,7 @@ def force_calling_chrom(
                 read_range,
                 svs_multi,
                 read_hap1_prob,
+                use_gl4,
             )
         ]
         pool_result.append(process_pool.map_async(solve_fc_wrapper, fx_para))
@@ -775,6 +777,7 @@ def solve_fc(
     read_range,
     svs_multi,
     read_hap1_prob,
+    use_gl4,
 ):
     reads_info = dict()  # [10000, 10468, 0, 'm54238_180901_011437/52298335/ccs']
     readsfile = open("%sreads.pickle" % (temporary_dir), "rb")
@@ -911,6 +914,7 @@ def solve_fc(
             read_id_dict,
             svtype_id_dict,
             read_hap1_prob,
+            use_gl4,
         )
         for i in range(len(svs_dict[chrom])):
             assert len(assign_list[i]) == 6, "assign genotype error"

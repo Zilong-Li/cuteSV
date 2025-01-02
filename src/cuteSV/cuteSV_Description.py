@@ -9,7 +9,7 @@
 
 import argparse
 
-VERSION = "3.0.0"
+VERSION = "3.0.1"
 
 
 class cuteSVdp(object):
@@ -104,6 +104,12 @@ def parseArgs(argv):
         default=None,
         type=str,
     )
+    parser.add_argument(
+        "--use_gl4",
+        help="Enable to normalization with the 4th Genotype.",
+        action="store_true",
+    )
+    
     # The description of batches needs to improve.
     parser.add_argument(
         "-S", "--sample", help="Sample name/id", default="NULL", type=str

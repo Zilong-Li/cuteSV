@@ -1434,6 +1434,7 @@ def main_ctrl(args, argv):
             args.threads,
             sigs_index,
             read_hap1_prob,
+            args.use_gl4,
         )
 
     else:
