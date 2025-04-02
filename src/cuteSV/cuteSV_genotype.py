@@ -58,21 +58,21 @@ def cal_PGL(rnames, vnames, hap1_prob, use_gl4 = False):
     gls = [0.0, 0.0, 0.0, 0.0, 0.0]
     for r in rnames:
         p = hap1_prob[r] if hap1_prob.get(r) else 0.5
-        gls[0] += log10(read_like(0, gts[0], p, 0.001))
-        gls[1] += log10(read_like(0, gts[1], p, 0.01))
-        gls[2] += log10(read_like(0, gts[2], p, 0.01))
-        gls[3] += log10(read_like(0, gts[3], p, 0.001))
-        gls[4] += log10(read_like(0, gts[4], p, 0.05))
+        gls[0] += log10(read_like(0, gts[0], p))
+        gls[1] += log10(read_like(0, gts[1], p))
+        gls[2] += log10(read_like(0, gts[2], p))
+        gls[3] += log10(read_like(0, gts[3], p))
+        gls[4] += log10(read_like(0, gts[4], p, 0.5))
     for r in vnames:
         p = hap1_prob[r] if hap1_prob.get(r) else 0.5
-        gls[0] += log10(read_like(1, gts[0], p, 0.001))
-        gls[1] += log10(read_like(1, gts[1], p, 0.01))
-        gls[2] += log10(read_like(1, gts[2], p, 0.01))
-        gls[3] += log10(read_like(1, gts[3], p, 0.001))
-        gls[4] += log10(read_like(1, gts[4], p, 0.05))
+        gls[0] += log10(read_like(1, gts[0], p))
+        gls[1] += log10(read_like(1, gts[1], p))
+        gls[2] += log10(read_like(1, gts[2], p))
+        gls[3] += log10(read_like(1, gts[3], p))
+        gls[4] += log10(read_like(1, gts[4], p, 0.5))
 
-    ori_GL00 = gls[0]
-    ori_GL01 = log10sumexp(np.array([log10(0.5) + gls[1], log10(0.5) + gls[2]]))
+    ori_GL00 = gls[0] 
+    ori_GL01 = log10sumexp(np.array([log10(0.5) + gls[1], log10(0.5) + gls[2]])) 
     # ori_GL01 = 0.5 * gls[1] + 0.5 * gls[2]
     ori_GL11 = gls[3]
     ori_GL22 = gls[4]
