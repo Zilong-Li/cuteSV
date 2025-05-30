@@ -29,6 +29,57 @@ def rescale_read_counts(c0, c1, max_allowed_reads=100):
         c1 = max_allowed_reads - c0
     return c0, c1
 
+def read_like(r, gt, hap1_prob, error=0.01):
+    if gt[0] == -1:
+        return 0.5
+    e1 = 1 - error if r == gt[0] else error
+    e2 = 1 - error if r == gt[1] else error
+    like = e1 * hap1_prob + e2 * (1 - hap1_prob)
+    return like
+
+
+def cal_PGL(rnames, vnames, hap1_prob):
+    """ Genotype calling based on phased genotype likelihood"""
+    gts = [[0, 0], [0, 1], [1, 0], [1, 1], [-1, -1]]
+    gls = [0.0, 0.0, 0.0, 0.0, 0.0]
+    for r in rnames:
+        p = hap1_prob[r] if hap1_prob.get(r) else 0.5
+        gls[0] += log10(read_like(0, gts[0], p))
+        gls[1] += log10(read_like(0, gts[1], p))
+        gls[2] += log10(read_like(0, gts[2], p))
+        gls[3] += log10(read_like(0, gts[3], p))
+        gls[4] += log10(read_like(0, gts[4], p, 0.5))
+    for r in vnames:
+        p = hap1_prob[r] if hap1_prob.get(r) else 0.5
+        gls[0] += log10(read_like(1, gts[0], p))
+        gls[1] += log10(read_like(1, gts[1], p))
+        gls[2] += log10(read_like(1, gts[2], p))
+        gls[3] += log10(read_like(1, gts[3], p))
+        gls[4] += log10(read_like(1, gts[4], p, 0.5))
+
+    ori_GL00 = gls[0] 
+    ori_GL01 = log10sumexp(np.array([log10(0.5) + gls[1], log10(0.5) + gls[2]])) 
+    ori_GL11 = gls[3]
+    ori_GL22 = gls[4]
+    # normalized genotype likelihood using 3 genotype categories
+    probs = list(normalize_log10_probs([ori_GL00, ori_GL01, ori_GL11]))
+    prob = probs[0:3]  ## this is python!
+    gi = prob.index(max(prob)) ## index of the most likelily genotypes
+    ## sniffles way
+    QUAL = max(0, min(60, int((-10) * likelihood_ratio(prob[1], prob[0])))) 
+    GL_P = [pow(10, i) for i in prob]
+    PL = [int(np.around(-10 * log10(max(9e-9, pow(10, i))))) for i in prob]
+    ## GQ is the second lowest PL - the lowest PL
+    # GQ = sorted([PL[0] - min(PL), PL[1] - min(PL), PL[2] - min(PL)])[1]
+    GQ = int(1000000 * GL_P[gi])  ##
+
+    return (
+        Genotype[gi],
+        "%d,%d,%d" % (PL[0], PL[1], PL[2]),
+        GQ,
+        QUAL,
+    )
+
 def cal_GL(c0, c1):
     if c0==3 and c1==1:
         return '0/1', '3,3,24', 3, 3.0
@@ -171,7 +222,7 @@ def assign_gt(iteration_dict, primary_num_dict, cover_dict, read_id_dict):
         assign_list.append([len(read_id_dict[idx]), DR, GT, GL, GQ, QUAL])
     return assign_list
 
-def assign_gt_fc(iteration_dict, primary_num_dict, cover_dict, overlap_dict, read_id_dict, svtype_id_dict):
+def assign_gt_fc(iteration_dict, primary_num_dict, cover_dict, overlap_dict, read_id_dict, svtype_id_dict, read_hap1_prob):
     assign_list = list()
     for idx in read_id_dict:
         iteration = iteration_dict[idx]
@@ -181,10 +232,12 @@ def assign_gt_fc(iteration_dict, primary_num_dict, cover_dict, overlap_dict, rea
         else:
             read_count = cover_dict[idx]
         DR = 0
+        rnames = list()
         for query in read_count:
             if query not in read_id_dict[idx]:
                 DR += 1
-        GT, GL, GQ, QUAL = cal_GL(DR, len(read_id_dict[idx]))
+                rnames.append(query)
+        GT, GL, GQ, QUAL = cal_PGL(rnames, read_id_dict[idx], read_hap1_prob)
         assign_list.append([len(read_id_dict[idx]), DR, GT, GL, GQ, QUAL])
     return assign_list
 

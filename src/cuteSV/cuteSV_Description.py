@@ -185,8 +185,12 @@ def parseArgs(argv):
 
 	# **************Parameters in force calling******************
 	GroupGenotype = parser.add_argument_group('Force calling')
-	GroupGenotype.add_argument('-Ivcf', #'--MERGED_VCF',
-		help = "The force calling module was disabled in cuteSV, please install cuteFC (https://github.com/Meltpinkg/cuteFC) to achieve SV force calling/regenotyping.",
+	GroupGenotype.add_argument('-Ivcf',
+		help = "Optional VCF file with population SVs. Enable to perform force calling with SVUPP.",
+		default = None,
+        type = str)
+	GroupGenotype.add_argument('-read_hap1_prob',
+		help = "Tab separated text file with probability of reads from arbitrary haplotype 1",
 		default = None,
         type = str)
 

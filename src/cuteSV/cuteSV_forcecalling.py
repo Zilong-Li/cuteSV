@@ -514,7 +514,7 @@ def generate_dispatch(reads_count, chrom_list):
     return dispatch
 
 
-def force_calling_chrom(ivcf_path, temporary_dir, max_cluster_bias_dict, threshold_gloab_dict, gt_round, read_range, threads, sigs_index):
+def force_calling_chrom(ivcf_path, temporary_dir, max_cluster_bias_dict, threshold_gloab_dict, gt_round, read_range, threads, sigs_index, read_hap1_prob):
     logging.info('Check the parameter -Ivcf: OK.')
     logging.info('Enable to perform force calling.')
     if sigs_index==None:
@@ -561,7 +561,7 @@ def force_calling_chrom(ivcf_path, temporary_dir, max_cluster_bias_dict, thresho
                 genotype_sv_list[chrom] = svs_tobe_genotyped[chrom]
         if len(genotype_sv_list) == 0:
             continue
-        fx_para = [(chroms, genotype_sv_list, temporary_dir, max_cluster_bias_dict, threshold_gloab_dict, gt_round, sigs_index, read_range, svs_multi)]
+        fx_para = [(chroms, genotype_sv_list, temporary_dir, max_cluster_bias_dict, threshold_gloab_dict, gt_round, sigs_index, read_range, svs_multi, read_hap1_prob)]
         pool_result.append(process_pool.map_async(solve_fc_wrapper, fx_para))
     process_pool.close()
     process_pool.join()
@@ -572,7 +572,7 @@ def force_calling_chrom(ivcf_path, temporary_dir, max_cluster_bias_dict, thresho
 
 def solve_fc_wrapper(args):
     return solve_fc(*args)
-def solve_fc(chrom_list, svs_dict, temporary_dir, max_cluster_bias_dict, threshold_gloab_dict, gt_round, sigs_index, read_range, svs_multi):
+def solve_fc(chrom_list, svs_dict, temporary_dir, max_cluster_bias_dict, threshold_gloab_dict, gt_round, sigs_index, read_range, svs_multi, read_hap1_prob):
     reads_info = dict() # [10000, 10468, 0, 'm54238_180901_011437/52298335/ccs']
     readsfile = open("%sreads.pickle"%(temporary_dir), 'rb')
     for chrom in chrom_list:
@@ -658,7 +658,7 @@ def solve_fc(chrom_list, svs_dict, temporary_dir, max_cluster_bias_dict, thresho
         assert len(iteration_dict) == len(read_id_dict), "overlap length error"
         assert len(cover_dict) == len(svs_dict[chrom]), "cover length error"
         assert len(overlap_dict) == len(svs_dict[chrom]), "overlap length error"
-        assign_list = assign_gt_fc(iteration_dict, primary_num_dict, cover_dict, overlap_dict, read_id_dict, svtype_id_dict)
+        assign_list = assign_gt_fc(iteration_dict, primary_num_dict, cover_dict, overlap_dict, read_id_dict, svtype_id_dict, read_hap1_prob)
         for i in range(len(svs_dict[chrom])):
             assert len(assign_list[i]) == 6, "assign genotype error"
             record = svs_dict[chrom][i]
@@ -676,3 +676,14 @@ def solve_fc(chrom_list, svs_dict, temporary_dir, max_cluster_bias_dict, thresho
                         record[8], seq, record[4]])
         logging.info("Finished calling %s."%(chrom))
     return gt_list
+
+def load_read_hap1_prob(read_phase_file):
+    read_hap1_prob = dict()
+    if read_phase_file is not None:
+        with open(read_phase_file, "r") as f:
+            for line in f:
+                seq = line.strip().split("\t")
+                read_hap1_prob[seq[0]] = float(seq[1])
+        return read_hap1_prob
+    else:
+        return None
