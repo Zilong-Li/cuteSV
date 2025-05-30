@@ -70,9 +70,8 @@ def cal_PGL(rnames, vnames, hap1_prob):
     GL_P = [pow(10, i) for i in prob]
     QUAL = abs(np.around(-10*log10(GL_P[0]), 1))
     PL = [int(np.around(-10 * log10(max(9e-9, pow(10, i))))) for i in prob]
-    ## GQ is the second lowest PL - the lowest PL
-    # GQ = sorted([PL[0] - min(PL), PL[1] - min(PL), PL[2] - min(PL)])[1]
-    GQ = int(1000000 * GL_P[gi])  ##
+    # GQ = int(1000000 * GL_P[gi])  ##
+    GQ = max([int(-10*log10(GL_P[1] + GL_P[2])), int(-10*log10(GL_P[0] + GL_P[2])), int(-10*log10(GL_P[0] + GL_P[1]))])
 
     return (
         Genotype[gi],
