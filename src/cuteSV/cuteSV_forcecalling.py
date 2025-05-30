@@ -682,8 +682,9 @@ def load_read_hap1_prob(read_phase_file):
     if read_phase_file is not None:
         with open(read_phase_file, "r") as f:
             for line in f:
-                seq = line.strip().split("\t")
+                seq = line.strip().split()
                 read_hap1_prob[seq[0]] = float(seq[1])
         return read_hap1_prob
     else:
         return None
+

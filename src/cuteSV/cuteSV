@@ -19,7 +19,7 @@ from cuteSV.cuteSV_resolveINV import run_inv
 from cuteSV.cuteSV_resolveTRA import run_tra
 from cuteSV.cuteSV_resolveINDEL import run_ins, run_del
 from cuteSV.cuteSV_resolveDUP import run_dup
-from cuteSV.cuteSV_genotype import generate_output, load_bed, Generation_VCF_header
+from cuteSV.cuteSV_genotype import generate_output, generate_pvcf, load_valuable_chr, load_bed, Generation_VCF_header
 from cuteSV.cuteSV_forcecalling import force_calling_chrom, load_read_hap1_prob
 import os
 import argparse
@@ -993,8 +993,6 @@ def main_ctrl(args, argv):
         temporary_dir = args.work_dir+'/'
     #'''
     # check the temporary files
-    if args.Ivcf != None:
-        raise ValueError("The force calling module has been disabled, please install cuteFC (https://github.com/Meltpinkg/cuteFC) to achieve SV force calling/regenotyping.")
     if not os.path.isfile(args.reference):
         raise FileNotFoundError("[Errno 2] No such file: '%s'"%args.reference)
     if not os.path.exists(args.work_dir):
