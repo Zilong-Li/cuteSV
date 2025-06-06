@@ -88,11 +88,12 @@ def cal_PGL(rnames, vnames, hap1_prob, use_gl4 = False):
     QUAL = max(
         0, min(60, int((-10) * likelihood_ratio(prob[1], prob[0])))
     ) 
-    GL_P = [pow(10, i) for i in prob]
+    GL_P = [max(9e-9, pow(10, i)) for i in prob]
     PL = [int(np.around(-10 * log10(max(9e-9, pow(10, i))))) for i in prob]
     ## GQ is the second lowest PL - the lowest PL
     # GQ = sorted([PL[0] - min(PL), PL[1] - min(PL), PL[2] - min(PL)])[1]
-    GQ = int(1000000 * GL_P[gi])  ##
+    # GQ = int(1000000 * GL_P[gi])  ## raw GP
+    GQ = min(int(-10 * log10(max(1e-10, 1.0 - GL_P[gi]))), 100) ## phred scale GQ cap at 100 
 
     return (
         Genotype[gi],
@@ -868,7 +869,7 @@ def load_read_hap1_prob(read_phase_file):
     if read_phase_file is not None:
         with open(read_phase_file, "r") as f:
             for line in f:
-                seq = line.strip().split("\t")
+                seq = line.strip().split()
                 read_hap1_prob[seq[0]] = float(seq[1])
         return read_hap1_prob
     else:
