@@ -67,12 +67,11 @@ def cal_PGL(rnames, vnames, hap1_prob):
     gi = prob.index(max(prob)) ## index of the most likelily genotypes
     ## sniffles way
     # QUAL = max(0, min(60, int((-10) * likelihood_ratio(prob[1], prob[0])))) 
-    GL_P = [pow(10, i) for i in prob]
-    QUAL = abs(np.around(-10*log10(GL_P[0]), 1))
-    PL = [int(np.around(-10 * log10(max(9e-9, pow(10, i))))) for i in prob]
-    # GQ = int(1000000 * GL_P[gi])  ##
-    GQ = max([int(-10*log10(GL_P[1] + GL_P[2])), int(-10*log10(GL_P[0] + GL_P[2])), int(-10*log10(GL_P[0] + GL_P[1]))])
-
+    GP = [max(9e-9, pow(10, i)) for i in prob]
+    QUAL = abs(np.around(-10 * log10(GP[0]), 1))
+    PL = [int(np.around(-10 * log10(i))) for i in GP]
+    GQ = min(int(-10 * log10(max(1e-10, 1.0 - GP[gi]))), 100) ## phred scale GQ cap at 100
+    
     return (
         Genotype[gi],
         "%d,%d,%d" % (PL[0], PL[1], PL[2]),

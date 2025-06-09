@@ -683,7 +683,8 @@ def load_read_hap1_prob(read_phase_file):
         with open(read_phase_file, "r") as f:
             for line in f:
                 seq = line.strip().split()
-                read_hap1_prob[seq[0]] = float(seq[1])
+                p = float(seq[1]) if seq[2] == "1" else 1.0 - float(seq[1])
+                read_hap1_prob[seq[0]] = p
         return read_hap1_prob
     else:
         return None
