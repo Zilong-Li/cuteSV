@@ -519,7 +519,11 @@ def generate_pvcf(args, result, reference, chrom):
                 ref = i[10]
                 alt = i[11]
             '''
-            ref = str(ref_chrom[max(i[1]-1, 0)])
+            try:
+                ref = str(ref_chrom[max(i[1]-1, 0)])
+            except:
+                ref = "MMM"
+                print("out of index:", chrom, i[1] - 1, ". please remove this variant!")
             alt = i[11]
             info_list = "{PRECISION};SVTYPE={SVTYPE};SVLEN={SVLEN};END={END};CIPOS={CIPOS};CILEN={CILEN};RE={RE}{RNAMES}".format(
                 PRECISION = "IMPRECISE" if i[2] == "0/0" else "PRECISE", 
